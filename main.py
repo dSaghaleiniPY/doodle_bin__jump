@@ -49,17 +49,26 @@ def screen_y_to_game(screen_y):
 def game_coordinate_to_screen(game_x, game_y):
     return (game_x_to_screen(game_x), game_y_to_screen(game_y))
 
+PLATFORM_COLORS = [
+    "#393939",
+    "#a3ce49"
+]
+
 # classes
 class Platform:
+    # types of platforms:
+    # 0: normal
+    # 1: bouncy
     def __init__(self, starting_y):
         self.x = random.randint(0, int(SCREEN_WIDTH - PLATFORM_WIDTH))
         self.y = starting_y
+        self.type = random.randint(0,1)
     
     def draw(self):
         if game_y_to_screen(self.y) > SCREEN_HEIGHT:
             self.y += SCREEN_HEIGHT
             self.x = random.randint(0, int(SCREEN_WIDTH - PLATFORM_WIDTH))
-        pygame.draw.rect(screen, "#393939", (game_x_to_screen(self.x), game_y_to_screen(self.y), PLATFORM_WIDTH, PLATFORM_THICKNESS))
+        pygame.draw.rect(screen, PLATFORM_COLORS[self.type], (game_x_to_screen(self.x), game_y_to_screen(self.y), PLATFORM_WIDTH, PLATFORM_THICKNESS))
     
     def bounce_player(self):
         global bin_y_speed
@@ -70,19 +79,22 @@ class Platform:
             bin_y <= self.y and
             bin_y_speed < 0
         ):
-            bin_y_speed = 5.6
+            if self.type == 1:
+                bin_y_speed = 7.5
+            else:
+                bin_y_speed = 5.6
 
 platforms = [
     Platform(30), # starting platform
-    Platform(bin_y - BIN_HEIGHT),
-    Platform(bin_y - BIN_HEIGHT + 100),
-    Platform(bin_y - BIN_HEIGHT + 200),
-    Platform(bin_y - BIN_HEIGHT + 300),
-    Platform(bin_y - BIN_HEIGHT + 400),
-    Platform(bin_y - BIN_HEIGHT + 500),
-    Platform(bin_y - BIN_HEIGHT + 600),
-    Platform(bin_y - BIN_HEIGHT + 700),
-    Platform(bin_y - BIN_HEIGHT + 800)
+    Platform(30 + bin_y - BIN_HEIGHT),
+    Platform(30 + bin_y - BIN_HEIGHT + 100),
+    Platform(30 + bin_y - BIN_HEIGHT + 200),
+    Platform(30 + bin_y - BIN_HEIGHT + 300),
+    Platform(30 + bin_y - BIN_HEIGHT + 400),
+    Platform(30 + bin_y - BIN_HEIGHT + 500),
+    Platform(30 + bin_y - BIN_HEIGHT + 600),
+    Platform(30 + bin_y - BIN_HEIGHT + 700),
+    Platform(30 + bin_y - BIN_HEIGHT + 800)
 ]
 platforms[0].x = SCREEN_WIDTH / 2 - PLATFORM_WIDTH
 
