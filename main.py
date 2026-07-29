@@ -49,13 +49,14 @@ def game_coordinate_to_screen(game_x, game_y):
 
 # classes
 class Platform:
-    def __init__(self):
+    def __init__(self, starting_y):
         self.x = random.randint(0, int(SCREEN_WIDTH - PLATFORM_WIDTH))
-        self.y = random.randint(0, int(SCREEN_HEIGHT / 2))
+        self.y = starting_y
     
     def draw(self):
         if game_y_to_screen(self.y) > SCREEN_HEIGHT:
-            self.y = screen_y_to_game(SCREEN_HEIGHT) + 200
+            self.y += SCREEN_HEIGHT
+            self.x = random.randint(0, int(SCREEN_WIDTH - PLATFORM_WIDTH))
         pygame.draw.rect(screen, "#393939", (game_x_to_screen(self.x), game_y_to_screen(self.y), PLATFORM_WIDTH, PLATFORM_THICKNESS))
     
     def bounce_player(self):
@@ -67,17 +68,21 @@ class Platform:
             bin_y <= self.y and
             bin_y_speed < 0
         ):
-            bin_y_speed = 4.7
+            bin_y_speed = 5.6
 
-platform1 = Platform()
-platform2 = Platform()
-platform3 = Platform()
-safety_platform = Platform()
-platform1.y = bin_y - BIN_HEIGHT
-platform2.y = bin_y - BIN_HEIGHT + 100
-platform3.y = bin_y - BIN_HEIGHT + 200
-safety_platform.y = 30
-safety_platform.x = SCREEN_WIDTH / 2 - PLATFORM_WIDTH
+platforms = [
+    Platform(30), # starting platform
+    Platform(bin_y - BIN_HEIGHT),
+    Platform(bin_y - BIN_HEIGHT + 100),
+    Platform(bin_y - BIN_HEIGHT + 200),
+    Platform(bin_y - BIN_HEIGHT + 300),
+    Platform(bin_y - BIN_HEIGHT + 400),
+    Platform(bin_y - BIN_HEIGHT + 500),
+    Platform(bin_y - BIN_HEIGHT + 600),
+    Platform(bin_y - BIN_HEIGHT + 700),
+    Platform(bin_y - BIN_HEIGHT + 800)
+]
+platforms[0].x = SCREEN_WIDTH / 2 - PLATFORM_WIDTH
 
 while running:
     # poll for events
@@ -93,10 +98,9 @@ while running:
     camera_y = highest_bin_y - starting_bin_y
 
     bin_y_speed = bin_y_speed - 0.07
-    platform1.bounce_player()
-    platform2.bounce_player()
-    platform3.bounce_player()
-    safety_platform.bounce_player()
+
+    for platform in platforms:
+        platform.bounce_player()
 
     # getting back on the screen when going off screen
     if bin_x > SCREEN_WIDTH + BIN_WIDTH/2:
@@ -119,10 +123,8 @@ while running:
 
     # RENDER YOUR GAME HERE
     pygame.draw.rect(screen, "#a3ce49", (game_x_to_screen(bin_x -(BIN_WIDTH/2)), game_y_to_screen(bin_y+BIN_HEIGHT), BIN_WIDTH, BIN_HEIGHT))
-    platform1.draw()
-    platform2.draw()
-    platform3.draw()
-    safety_platform.draw()
+    for platform in platforms:
+        platform.draw()
 
     # flip() the display to put your work on screen
     pygame.display.flip()
