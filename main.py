@@ -14,6 +14,8 @@ SHOOTING_LEFT_BIN_IMAGE = pygame.image.load("shooting_left_bin.png")
 SHOOTING_RIGHT_BIN_IMAGE = pygame.image.load("shooting_right_bin.png")
 SHOOTING_BIN_IMAGE = pygame.image.load("shooting_bin.png")
 
+CURRENT_BIN_IMAGE = LEFT_BIN_IMAGE
+
 BIN_WIDTH = 50
 BIN_HEIGHT = 64
 PLATFORM_WIDTH = SCREEN_WIDTH / 6
@@ -112,8 +114,10 @@ while running:
     pressed_keys = pygame.key.get_pressed()
     if pressed_keys[pygame.K_LEFT]:
         bin_x = bin_x - 3
+        CURRENT_BIN_IMAGE = LEFT_BIN_IMAGE
     if pressed_keys[pygame.K_RIGHT]:
         bin_x = bin_x + 3
+        CURRENT_BIN_IMAGE = RIGHT_BIN_IMAGE
         
     # losing
     if bin_y <= -BIN_HEIGHT:
@@ -122,7 +126,7 @@ while running:
     screen.fill(BG_COLOR)
 
     # RENDER YOUR GAME HERE
-    pygame.draw.rect(screen, "#a3ce49", (game_x_to_screen(bin_x -(BIN_WIDTH/2)), game_y_to_screen(bin_y+BIN_HEIGHT), BIN_WIDTH, BIN_HEIGHT))
+    screen.blit(CURRENT_BIN_IMAGE, (game_x_to_screen(bin_x -(BIN_WIDTH/2)), game_y_to_screen(bin_y+BIN_HEIGHT)))
     for platform in platforms:
         platform.draw()
 
