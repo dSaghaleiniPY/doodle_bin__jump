@@ -8,6 +8,8 @@ SCREEN_WIDTH = 470
 SCREEN_HEIGHT = 720
 BG_COLOR = "#fdf1e7"
 
+SCORE_FONT = pygame.font.SysFont("Arial", 30)
+
 LEFT_BIN_IMAGE = pygame.image.load("bin_1.png")
 RIGHT_BIN_IMAGE = pygame.image.load("bin_2.png")
 SHOOTING_LEFT_BIN_IMAGE = pygame.image.load("shooting_left_bin.png")
@@ -31,6 +33,9 @@ bin_y = SCREEN_HEIGHT * .3
 starting_bin_y = bin_y
 highest_bin_y = bin_y
 camera_y = 0
+
+platforms_to_hide = 0
+hidden_platforms = 0
 
 # platform_x = 75
 # platform_y = bin_y + BIN_HEIGHT
@@ -57,45 +62,63 @@ class Platform:
     def __init__(self, starting_y):
         self.x = random.randint(0, int(SCREEN_WIDTH - PLATFORM_WIDTH))
         self.y = starting_y
+        self.active = True
         self.pick_settings()
 
     def pick_settings(self):
         self.bouncy = random.randint(1,8) == 1
+        self.breaks = random.randint(1,7) == 1
         if random.randint(1, 10) == 1:
             self.x_speed = 3
         else:
             self.x_speed = 0
 
     def make_platform_move(self):
-        self.x += self.x_speed
-        if self.x >= SCREEN_WIDTH - 10 - PLATFORM_WIDTH:
-            self.x_speed *= -1
-        if self.x <= 10:
-            self.x_speed *= -1
+        if self.active:
+            self.x += self.x_speed
+            if self.x >= SCREEN_WIDTH - 10 - PLATFORM_WIDTH:
+                self.x_speed *= -1
+            if self.x <= 10:
+                self.x_speed *= -1
+    
+    def reset_platform(self):
+        self.y += SCREEN_HEIGHT
+        self.x = random.randint(0, int(SCREEN_WIDTH - PLATFORM_WIDTH))
+        self.pick_settings()
     
     def draw(self):
-        if game_y_to_screen(self.y) > SCREEN_HEIGHT:
-            self.y += SCREEN_HEIGHT
-            self.x = random.randint(0, int(SCREEN_WIDTH - PLATFORM_WIDTH))
-            self.pick_settings()
-        if self.bouncy:
-            pygame.draw.rect(screen, "#a3ce49", (game_x_to_screen(self.x), game_y_to_screen(self.y), PLATFORM_WIDTH, PLATFORM_THICKNESS))
-        else:
-            pygame.draw.rect(screen, "#393939", (game_x_to_screen(self.x), game_y_to_screen(self.y), PLATFORM_WIDTH, PLATFORM_THICKNESS))
+        global platforms_to_hide
+        global hidden_platforms
+        if self.active:
+            if game_y_to_screen(self.y) > SCREEN_HEIGHT:
+                if hidden_platforms < platforms_to_hide and random.randint(1,10) == 1:
+                    hidden_platforms += 1
+                    self.active = False
+                else:
+                    self.reset_platform()
+            if self.breaks:
+                pygame.draw.rect(screen, "#e76349", (game_x_to_screen(self.x), game_y_to_screen(self.y), PLATFORM_WIDTH, PLATFORM_THICKNESS))
+            elif self.bouncy:
+                pygame.draw.rect(screen, "#a3ce49", (game_x_to_screen(self.x), game_y_to_screen(self.y), PLATFORM_WIDTH, PLATFORM_THICKNESS))
+            else:
+                pygame.draw.rect(screen, "#393939", (game_x_to_screen(self.x), game_y_to_screen(self.y), PLATFORM_WIDTH, PLATFORM_THICKNESS))
 
     def bounce_player(self):
         global bin_y_speed
-        if (
-            bin_x >= self.x - BIN_WIDTH / 2 and
-            bin_x <= self.x + PLATFORM_WIDTH + BIN_WIDTH / 2 and
-            bin_y >= self.y - PLATFORM_THICKNESS and
-            bin_y <= self.y and
-            bin_y_speed < 0
-        ):
-            if self.bouncy:
-                bin_y_speed = 7.5
-            else:
-                bin_y_speed = 5.6
+        if self.active:
+            if (
+                bin_x >= self.x - BIN_WIDTH / 2 and
+                bin_x <= self.x + PLATFORM_WIDTH + BIN_WIDTH / 2 and
+                bin_y >= self.y - PLATFORM_THICKNESS and
+                bin_y <= self.y and
+                bin_y_speed < 0
+            ):
+                if self.breaks:
+                    self.reset_platform()
+                elif self.bouncy:
+                    bin_y_speed = 7.5
+                else:
+                    bin_y_speed = 5.6
 
 platforms = [
     Platform(30), # starting platform
@@ -104,10 +127,13 @@ platforms = [
     Platform(30 + bin_y - BIN_HEIGHT + 200),
     Platform(30 + bin_y - BIN_HEIGHT + 300),
     Platform(30 + bin_y - BIN_HEIGHT + 400),
+    Platform(30 + bin_y - BIN_HEIGHT + 450),
     Platform(30 + bin_y - BIN_HEIGHT + 500),
     Platform(30 + bin_y - BIN_HEIGHT + 600),
+    Platform(30 + bin_y - BIN_HEIGHT + 650),
     Platform(30 + bin_y - BIN_HEIGHT + 700),
-    Platform(30 + bin_y - BIN_HEIGHT + 800)
+    Platform(30 + bin_y - BIN_HEIGHT + 800),
+    Platform(30 + bin_y - BIN_HEIGHT + 850)
 ]
 platforms[0].x = SCREEN_WIDTH / 2 - PLATFORM_WIDTH
 
@@ -119,7 +145,7 @@ while running:
             running = False
 
     # score
-    score = camera_y
+    score = camera_y/3
 
     # move down and jumping
     bin_y = bin_y + bin_y_speed
@@ -149,15 +175,22 @@ while running:
         CURRENT_BIN_IMAGE = RIGHT_BIN_IMAGE
         
     # losing
-    if bin_y <= -BIN_HEIGHT:
+    if game_y_to_screen(bin_y) >= SCREEN_HEIGHT + BIN_HEIGHT:
         BG_COLOR = ("#FFDCDC")
     # fill the screen with a color to wipe away anything from last frame
     screen.fill(BG_COLOR)
 
-    # RENDER YOUR GAME HERE
     screen.blit(CURRENT_BIN_IMAGE, (game_x_to_screen(bin_x -(BIN_WIDTH/2)), game_y_to_screen(bin_y+BIN_HEIGHT)))
     for platform in platforms:
         platform.draw()
+
+    # score
+    SCORE_IMAGE = SCORE_FONT.render(str(int(score)), True, "black")
+    screen.blit(SCORE_IMAGE, (10, 10))
+
+    # remove a platform when appropriate
+    if score >= 300:
+        platforms_to_hide = 5
 
     # flip() the display to put your work on screen
     pygame.display.flip()
