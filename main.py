@@ -49,11 +49,6 @@ def screen_y_to_game(screen_y):
 def game_coordinate_to_screen(game_x, game_y):
     return (game_x_to_screen(game_x), game_y_to_screen(game_y))
 
-PLATFORM_COLORS = [
-    "#393939",
-    "#a3ce49"
-]
-
 # classes
 class Platform:
     # types of platforms:
@@ -62,14 +57,17 @@ class Platform:
     def __init__(self, starting_y):
         self.x = random.randint(0, int(SCREEN_WIDTH - PLATFORM_WIDTH))
         self.y = starting_y
-        self.type = random.randint(0,1)
+        self.bouncy = random.randint(1,8) == 1
     
     def draw(self):
         if game_y_to_screen(self.y) > SCREEN_HEIGHT:
             self.y += SCREEN_HEIGHT
             self.x = random.randint(0, int(SCREEN_WIDTH - PLATFORM_WIDTH))
-        pygame.draw.rect(screen, PLATFORM_COLORS[self.type], (game_x_to_screen(self.x), game_y_to_screen(self.y), PLATFORM_WIDTH, PLATFORM_THICKNESS))
-    
+        if self.bouncy:
+            pygame.draw.rect(screen, "#a3ce49", (game_x_to_screen(self.x), game_y_to_screen(self.y), PLATFORM_WIDTH, PLATFORM_THICKNESS))
+        else:
+            pygame.draw.rect(screen, "#393939", (game_x_to_screen(self.x), game_y_to_screen(self.y), PLATFORM_WIDTH, PLATFORM_THICKNESS))
+
     def bounce_player(self):
         global bin_y_speed
         if (
@@ -79,7 +77,7 @@ class Platform:
             bin_y <= self.y and
             bin_y_speed < 0
         ):
-            if self.type == 1:
+            if self.bouncy:
                 bin_y_speed = 7.5
             else:
                 bin_y_speed = 5.6
@@ -104,7 +102,10 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-    
+
+    # score
+    score = camera_y
+
     # move down and jumping
     bin_y = bin_y + bin_y_speed
     if bin_y > highest_bin_y:
