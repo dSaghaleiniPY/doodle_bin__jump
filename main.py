@@ -57,12 +57,27 @@ class Platform:
     def __init__(self, starting_y):
         self.x = random.randint(0, int(SCREEN_WIDTH - PLATFORM_WIDTH))
         self.y = starting_y
+        self.pick_settings()
+
+    def pick_settings(self):
         self.bouncy = random.randint(1,8) == 1
+        if random.randint(1, 10) == 1:
+            self.x_speed = 3
+        else:
+            self.x_speed = 0
+
+    def make_platform_move(self):
+        self.x += self.x_speed
+        if self.x >= SCREEN_WIDTH - 10 - PLATFORM_WIDTH:
+            self.x_speed *= -1
+        if self.x <= 10:
+            self.x_speed *= -1
     
     def draw(self):
         if game_y_to_screen(self.y) > SCREEN_HEIGHT:
             self.y += SCREEN_HEIGHT
             self.x = random.randint(0, int(SCREEN_WIDTH - PLATFORM_WIDTH))
+            self.pick_settings()
         if self.bouncy:
             pygame.draw.rect(screen, "#a3ce49", (game_x_to_screen(self.x), game_y_to_screen(self.y), PLATFORM_WIDTH, PLATFORM_THICKNESS))
         else:
@@ -116,6 +131,7 @@ while running:
 
     for platform in platforms:
         platform.bounce_player()
+        platform.make_platform_move()
 
     # getting back on the screen when going off screen
     if bin_x > SCREEN_WIDTH + BIN_WIDTH/2:
