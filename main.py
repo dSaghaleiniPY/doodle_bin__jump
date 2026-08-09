@@ -33,6 +33,7 @@ running = True
 bin_x = SCREEN_WIDTH/2
 bin_y = SCREEN_HEIGHT * .3
 bin_shooting = 0
+bin_moving_right = False
 starting_bin_y = bin_y
 highest_bin_y = bin_y
 camera_y = 0
@@ -123,6 +124,25 @@ class Platform:
                 else:
                     bin_y_speed = 5.6
 
+class Bullet:
+    def __init__(self, starting_x, starting_y):
+        self.x = starting_x
+        self.y = starting_y
+
+    def draw(self):
+        pygame.draw.circle(screen, "#93c47d", game_coordinate_to_screen(self.x, self.y), 5)
+
+    def move_up(self):
+        self.y += 30
+
+class Monster:
+    def __init__(self, starting_x, starting_y):
+        self.x = starting_x
+        self.y = starting_y
+
+    def draw(self):
+        pygame.draw.circle(screen, "black", game_coordinate_to_screen(self.x, self.y), 30)
+
 platforms = [
     Platform(30), # starting platform
     Platform(30 + bin_y - BIN_HEIGHT),
@@ -140,6 +160,9 @@ platforms = [
 ]
 platforms[0].x = SCREEN_WIDTH / 2 - PLATFORM_WIDTH
 
+bullets = []
+monsters = [Monster(SCREEN_WIDTH / 2, 6000)]
+
 while running:
     # poll for events
     # pygame.QUIT event means the user clicked X to close your window
@@ -148,7 +171,8 @@ while running:
             running = False
         # shooting
         if event.type == pygame.KEYDOWN and event.key == pygame.K_UP:
-            bin_shooting = 10
+            bin_shooting = 25
+            bullets.append(Bullet(bin_x, bin_y + BIN_HEIGHT + 5))
 
     # score
     score = camera_y/3
@@ -167,6 +191,9 @@ while running:
         platform.bounce_player()
         platform.make_platform_move()
 
+    for bullet in bullets:
+        bullet.move_up()
+
     # getting back on the screen when going off screen
     if bin_x > SCREEN_WIDTH + BIN_WIDTH/2:
         bin_x = -BIN_WIDTH/2
@@ -175,24 +202,26 @@ while running:
 
     # moving
     pressed_keys = pygame.key.get_pressed()
-    if score < 6500:
-        if pressed_keys[pygame.K_LEFT]:
-            bin_x = bin_x - 3
-            CURRENT_BIN_IMAGE = LEFT_BIN_IMAGE
-        if pressed_keys[pygame.K_RIGHT]:
-            bin_x = bin_x + 3
-            CURRENT_BIN_IMAGE = RIGHT_BIN_IMAGE
-    else:
-        if pressed_keys[pygame.K_LEFT]:
-            bin_x = bin_x - 3
-            CURRENT_BIN_IMAGE = LEFT_BIN_BALLIN_IMAGE
-        if pressed_keys[pygame.K_RIGHT]:
-            bin_x = bin_x + 3
-            CURRENT_BIN_IMAGE = RIGHT_BIN_BALLIN_IMAGE
+    if pressed_keys[pygame.K_LEFT]:
+        bin_x = bin_x - 3
+        bin_moving_right = False
+    if pressed_keys[pygame.K_RIGHT]:
+        bin_x = bin_x + 3
+        bin_moving_right = True
 
     if bin_shooting > 0:
         CURRENT_BIN_IMAGE = SHOOTING_BIN_IMAGE
-    
+    elif score < 6500:
+        if bin_moving_right:
+            CURRENT_BIN_IMAGE = RIGHT_BIN_IMAGE
+        else:
+            CURRENT_BIN_IMAGE = LEFT_BIN_IMAGE
+    else:
+        if bin_moving_right == False:
+            CURRENT_BIN_IMAGE = LEFT_BIN_BALLIN_IMAGE
+        else:
+            CURRENT_BIN_IMAGE = RIGHT_BIN_BALLIN_IMAGE
+
     # losing
     if game_y_to_screen(bin_y) >= SCREEN_HEIGHT + BIN_HEIGHT:
         BG_COLOR = ("#FFDCDC")
@@ -202,6 +231,12 @@ while running:
     screen.blit(CURRENT_BIN_IMAGE, (game_x_to_screen(bin_x -(BIN_WIDTH/2)), game_y_to_screen(bin_y+BIN_HEIGHT)))
     for platform in platforms:
         platform.draw()
+
+    for bullet in bullets:
+        bullet.draw()
+
+    for monster in monsters:
+        monster.draw()
 
     # score
     SCORE_IMAGE = SCORE_FONT.render(str(int(score)), True, "black")
