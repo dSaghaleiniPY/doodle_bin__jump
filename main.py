@@ -18,14 +18,14 @@ SHOOTING_RIGHT_BIN_IMAGE = pygame.image.load("shooting_right_bin.png")
 SHOOTING_BIN_IMAGE = pygame.image.load("shooting_bin.png")
 LEFT_BIN_BALLIN_IMAGE = pygame.image.load("BIN_BALLIN!.png")
 RIGHT_BIN_BALLIN_IMAGE = pygame.image.load("BIN_BALLIN 2!.png")
-# BOUNCY_PLATFORM
-
+BOUNCY_PLATFORM_IMAGE = pygame.image.load("bouncy_platform.png")
+BREAKABLE_PLATFORM_IMAGE = pygame.image.load("breakable_platform.png")
 
 CURRENT_BIN_IMAGE = LEFT_BIN_IMAGE
 
 BIN_WIDTH = 50
 BIN_HEIGHT = 64
-PLATFORM_WIDTH = SCREEN_WIDTH / 6
+PLATFORM_WIDTH = 60
 PLATFORM_THICKNESS = 10
 
 # pygame setup
@@ -106,9 +106,11 @@ class Platform:
                 else:
                     self.reset_platform()
             if self.breaks:
-                pygame.draw.rect(screen, "#e76349", (game_x_to_screen(self.x), game_y_to_screen(self.y), PLATFORM_WIDTH, PLATFORM_THICKNESS))
+                #pygame.draw.rect(screen, "#e76349", (game_x_to_screen(self.x), game_y_to_screen(self.y), PLATFORM_WIDTH, PLATFORM_THICKNESS))
+                screen.blit(BREAKABLE_PLATFORM_IMAGE, game_coordinate_to_screen(self.x, self.y))
             elif self.bouncy:
-                pygame.draw.rect(screen, "#a3ce49", (game_x_to_screen(self.x), game_y_to_screen(self.y), PLATFORM_WIDTH, PLATFORM_THICKNESS))
+                screen.blit(BOUNCY_PLATFORM_IMAGE, game_coordinate_to_screen(self.x, self.y))
+                # pygame.draw.rect(screen, "#a3ce49", (game_x_to_screen(self.x), game_y_to_screen(self.y), PLATFORM_WIDTH, PLATFORM_THICKNESS))
             else:
                 pygame.draw.rect(screen, "#393939", (game_x_to_screen(self.x), game_y_to_screen(self.y), PLATFORM_WIDTH, PLATFORM_THICKNESS))
 
@@ -120,10 +122,12 @@ class Platform:
                 bin_x <= self.x + PLATFORM_WIDTH + BIN_WIDTH / 2 and
                 bin_y >= self.y - PLATFORM_THICKNESS and
                 bin_y <= self.y and
-                bin_y_speed < 0
+                bin_y_speed < 0 and
+                alive
             ):
                 if self.breaks:
                     self.reset_platform()
+                    bin_y_speed = 5.6
                 elif self.bouncy:
                     bin_y_speed = 7.5
                 else:
@@ -154,6 +158,17 @@ class Monster:
     def draw(self):
         if self.alive == True:
             pygame.draw.circle(screen, "black", game_coordinate_to_screen(self.x, self.y), 30)
+
+    def kill_touching_player(self):
+        global alive, bin_y_speed
+        if (
+            bin_x + BIN_WIDTH > self.x - 30 and
+            bin_x < self.x - 30 + 60 and
+            bin_y + BIN_HEIGHT > self.y - 30 and
+            bin_y < self.y - 30 + 60
+        ):
+            alive = False
+            bin_y_speed = -2
 
 platforms = [
     Platform(30), # starting platform
@@ -209,6 +224,9 @@ while running:
         bullet.kill_touching_monsters(monsters)
         if bullet.y > bin_y + SCREEN_HEIGHT * 2:
             bullets.pop(-i + len(bullets) - 1)
+
+    for monster in monsters:
+        monster.kill_touching_player()
 
     # getting back on the screen when going off screen
     if bin_x > SCREEN_WIDTH + BIN_WIDTH/2:
