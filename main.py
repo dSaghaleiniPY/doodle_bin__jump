@@ -1,6 +1,7 @@
 # Example file showing a basic pygame "game loop"
 import pygame
 import random
+import math
 pygame.init()
 
 # configuration
@@ -17,6 +18,8 @@ SHOOTING_RIGHT_BIN_IMAGE = pygame.image.load("shooting_right_bin.png")
 SHOOTING_BIN_IMAGE = pygame.image.load("shooting_bin.png")
 LEFT_BIN_BALLIN_IMAGE = pygame.image.load("BIN_BALLIN!.png")
 RIGHT_BIN_BALLIN_IMAGE = pygame.image.load("BIN_BALLIN 2!.png")
+# BOUNCY_PLATFORM
+
 
 CURRENT_BIN_IMAGE = LEFT_BIN_IMAGE
 
@@ -40,6 +43,8 @@ camera_y = 0
 
 platforms_to_hide = 0
 hidden_platforms = 0
+
+alive = True
 
 # platform_x = 75
 # platform_y = bin_y + BIN_HEIGHT
@@ -135,13 +140,20 @@ class Bullet:
     def move_up(self):
         self.y += 30
 
+    def kill_touching_monsters(self, monsters):
+        for monster in monsters:
+            if math.sqrt((self.x - monster.x) ** 2 + (self.y - monster.y) ** 2) <= 35:
+                monster.alive = False
+
 class Monster:
     def __init__(self, starting_x, starting_y):
         self.x = starting_x
         self.y = starting_y
+        self.alive = True
 
     def draw(self):
-        pygame.draw.circle(screen, "black", game_coordinate_to_screen(self.x, self.y), 30)
+        if self.alive == True:
+            pygame.draw.circle(screen, "black", game_coordinate_to_screen(self.x, self.y), 30)
 
 platforms = [
     Platform(30), # starting platform
@@ -161,7 +173,7 @@ platforms = [
 platforms[0].x = SCREEN_WIDTH / 2 - PLATFORM_WIDTH
 
 bullets = []
-monsters = [Monster(SCREEN_WIDTH / 2, 6000)]
+monsters = [Monster(SCREEN_WIDTH / 2, 1000)]
 
 while running:
     # poll for events
@@ -182,7 +194,7 @@ while running:
     if bin_y > highest_bin_y:
         highest_bin_y = bin_y
     camera_y = highest_bin_y - starting_bin_y
-    bin_y_speed = bin_y_speed - 0.07
+    bin_y_speed = bin_y_speed - .09
 
     # timers
     bin_shooting -= 1
@@ -191,8 +203,12 @@ while running:
         platform.bounce_player()
         platform.make_platform_move()
 
-    for bullet in bullets:
+    for i in range(len(bullets)):
+        bullet = bullets[-i + len(bullets) - 1]
         bullet.move_up()
+        bullet.kill_touching_monsters(monsters)
+        if bullet.y > bin_y + SCREEN_HEIGHT * 2:
+            bullets.pop(-i + len(bullets) - 1)
 
     # getting back on the screen when going off screen
     if bin_x > SCREEN_WIDTH + BIN_WIDTH/2:
@@ -243,9 +259,9 @@ while running:
     screen.blit(SCORE_IMAGE, (10, 10))
 
     # changing overtime
-    if score >= 300:
+    if score >= 1000:
         platforms_to_hide = 2
-    if score >= 600:
+    if score >= 2000:
         platforms_to_hide = 4
 
     # flip() the display to put your work on screen
