@@ -165,31 +165,65 @@ class Monster:
             bin_x + BIN_WIDTH > self.x - 30 and
             bin_x < self.x - 30 + 60 and
             bin_y + BIN_HEIGHT > self.y - 30 and
-            bin_y < self.y - 30 + 60
+            bin_y < self.y - 30 + 60 and
+            self.alive
         ):
             alive = False
             bin_y_speed = -2
 
-platforms = [
-    Platform(30), # starting platform
-    Platform(30 + bin_y - BIN_HEIGHT),
-    Platform(30 + bin_y - BIN_HEIGHT + 100),
-    Platform(30 + bin_y - BIN_HEIGHT + 200),
-    Platform(30 + bin_y - BIN_HEIGHT + 300),
-    Platform(30 + bin_y - BIN_HEIGHT + 400),
-    Platform(30 + bin_y - BIN_HEIGHT + 450),
-    Platform(30 + bin_y - BIN_HEIGHT + 500),
-    Platform(30 + bin_y - BIN_HEIGHT + 600),
-    Platform(30 + bin_y - BIN_HEIGHT + 650),
-    Platform(30 + bin_y - BIN_HEIGHT + 700),
-    Platform(30 + bin_y - BIN_HEIGHT + 800),
-    Platform(30 + bin_y - BIN_HEIGHT + 850)
-]
-platforms[0].x = SCREEN_WIDTH / 2 - PLATFORM_WIDTH
-
+platforms = []
 bullets = []
-monsters = [Monster(SCREEN_WIDTH / 2, 1000)]
+monsters = []
 
+def setup_game_stuff():
+    global platforms, bullets, monsters, bin_y_speed, bin_y, bin_x, alive
+
+    bin_y_speed = 0
+    bin_x = SCREEN_WIDTH/2
+    bin_y = SCREEN_HEIGHT * .3
+    alive = True
+
+    platforms = [
+        Platform(30), # starting platform
+        Platform(30 + bin_y - BIN_HEIGHT),
+        Platform(30 + bin_y - BIN_HEIGHT + 100),
+        Platform(30 + bin_y - BIN_HEIGHT + 200),
+        Platform(30 + bin_y - BIN_HEIGHT + 300),
+        Platform(30 + bin_y - BIN_HEIGHT + 400),
+        Platform(30 + bin_y - BIN_HEIGHT + 450),
+        Platform(30 + bin_y - BIN_HEIGHT + 500),
+        Platform(30 + bin_y - BIN_HEIGHT + 600),
+        Platform(30 + bin_y - BIN_HEIGHT + 650),
+        Platform(30 + bin_y - BIN_HEIGHT + 700),
+        Platform(30 + bin_y - BIN_HEIGHT + 800),
+        Platform(30 + bin_y - BIN_HEIGHT + 850)
+    ]
+    platforms[0].x = SCREEN_WIDTH / 2 - PLATFORM_WIDTH
+
+    bullets = []
+    monsters = [Monster(SCREEN_WIDTH / 2, 1000)]
+
+# ui
+def dead_ui():
+    # mouse detection
+    mouse_clicked = pygame.mouse.get_pressed()[0]
+    mouse_x, mouse_y = pygame.mouse.get_pos()
+
+    # Try Again
+    pygame.draw.rect(screen, "red", (SCREEN_WIDTH/2 - 75, SCREEN_HEIGHT/2 - 35, 150, 70))
+    if (
+        mouse_clicked and
+        mouse_x > SCREEN_WIDTH/2 - 75 and
+        mouse_x < SCREEN_WIDTH/2 - 75 + 150 and
+        mouse_y > SCREEN_HEIGHT/2 - 35 and
+        mouse_y < SCREEN_HEIGHT/2 - 35 + 70
+    ):
+        setup_game_stuff()
+        
+    # Main Menu
+    pygame.draw.rect(screen, "red", (SCREEN_WIDTH/2 - 75, SCREEN_HEIGHT/2 + 52, 150, 70))
+
+setup_game_stuff()
 while running:
     # poll for events
     # pygame.QUIT event means the user clicked X to close your window
@@ -258,7 +292,11 @@ while running:
 
     # losing
     if game_y_to_screen(bin_y) >= SCREEN_HEIGHT + BIN_HEIGHT:
+        alive = False
+
+    if alive == False:
         BG_COLOR = ("#FFDCDC")
+
     # fill the screen with a color to wipe away anything from last frame
     screen.fill(BG_COLOR)
 
@@ -275,6 +313,11 @@ while running:
     # score
     SCORE_IMAGE = SCORE_FONT.render(str(int(score)), True, "black")
     screen.blit(SCORE_IMAGE, (10, 10))
+
+   
+    # ui
+    if not alive:
+        dead_ui()
 
     # changing overtime
     if score >= 1000:
