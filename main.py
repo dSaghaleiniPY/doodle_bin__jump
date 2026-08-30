@@ -11,15 +11,18 @@ BG_COLOR = "#fdf1e7"
 
 SCORE_FONT = pygame.font.SysFont("Arial", 30)
 
-LEFT_BIN_IMAGE = pygame.image.load("bin_1.png")
-RIGHT_BIN_IMAGE = pygame.image.load("bin_2.png")
-SHOOTING_LEFT_BIN_IMAGE = pygame.image.load("shooting_left_bin.png")
-SHOOTING_RIGHT_BIN_IMAGE = pygame.image.load("shooting_right_bin.png")
-SHOOTING_BIN_IMAGE = pygame.image.load("shooting_bin.png")
-LEFT_BIN_BALLIN_IMAGE = pygame.image.load("BIN_BALLIN!.png")
-RIGHT_BIN_BALLIN_IMAGE = pygame.image.load("BIN_BALLIN 2!.png")
-BOUNCY_PLATFORM_IMAGE = pygame.image.load("bouncy_platform.png")
-BREAKABLE_PLATFORM_IMAGE = pygame.image.load("breakable_platform.png")
+LEFT_BIN_IMAGE = pygame.image.load("images/bin_1.png")
+RIGHT_BIN_IMAGE = pygame.image.load("images/bin_2.png")
+SHOOTING_LEFT_BIN_IMAGE = pygame.image.load("images/shooting_left_bin.png")
+SHOOTING_RIGHT_BIN_IMAGE = pygame.image.load("images/shooting_right_bin.png")
+SHOOTING_BIN_IMAGE = pygame.image.load("images/shooting_bin.png")
+LEFT_BIN_BALLIN_IMAGE = pygame.image.load("images/BIN_BALLIN!.png")
+RIGHT_BIN_BALLIN_IMAGE = pygame.image.load("images/BIN_BALLIN 2!.png")
+BOUNCY_PLATFORM_IMAGE = pygame.image.load("images/bouncy_platform.png")
+BREAKABLE_PLATFORM_IMAGE = pygame.image.load("images/breakable_platform.png")
+KITCAT_IMAGE = pygame.image.load("images/kitcat.png")
+MAIN_MENU_IMAGE = pygame.image.load("images/main_menu.png")
+TRY_AGAIN_IMAGE = pygame.image.load("images/try_again.png")
 
 CURRENT_BIN_IMAGE = LEFT_BIN_IMAGE
 
@@ -43,6 +46,8 @@ camera_y = 0
 
 platforms_to_hide = 0
 hidden_platforms = 0
+
+game_still_going = True
 
 alive = True
 
@@ -176,12 +181,16 @@ bullets = []
 monsters = []
 
 def setup_game_stuff():
-    global platforms, bullets, monsters, bin_y_speed, bin_y, bin_x, alive
+    global platforms, bullets, monsters, bin_y_speed, bin_y, bin_x, alive, camera_y, highest_bin_y, starting_bin_y, BG_COLOR
 
     bin_y_speed = 0
     bin_x = SCREEN_WIDTH/2
     bin_y = SCREEN_HEIGHT * .3
     alive = True
+    camera_y = 0
+    starting_bin_y = bin_y
+    highest_bin_y = bin_y
+    BG_COLOR = "#fdf1e7"
 
     platforms = [
         Platform(30), # starting platform
@@ -204,13 +213,18 @@ def setup_game_stuff():
     monsters = [Monster(SCREEN_WIDTH / 2, 1000)]
 
 # ui
+def main_menu_ui():
+    pass
 def dead_ui():
+    global game_still_going, BG_COLOR
+
     # mouse detection
     mouse_clicked = pygame.mouse.get_pressed()[0]
     mouse_x, mouse_y = pygame.mouse.get_pos()
 
     # Try Again
-    pygame.draw.rect(screen, "red", (SCREEN_WIDTH/2 - 75, SCREEN_HEIGHT/2 - 35, 150, 70))
+    #pygame.draw.rect(screen, "red", (SCREEN_WIDTH/2 - 75, SCREEN_HEIGHT/2 - 35, 150, 70))
+    screen.blit(TRY_AGAIN_IMAGE, (SCREEN_WIDTH/2 - 75, SCREEN_HEIGHT/2 - 35))
     if (
         mouse_clicked and
         mouse_x > SCREEN_WIDTH/2 - 75 and
@@ -219,10 +233,21 @@ def dead_ui():
         mouse_y < SCREEN_HEIGHT/2 - 35 + 70
     ):
         setup_game_stuff()
-        
+    
     # Main Menu
-    pygame.draw.rect(screen, "red", (SCREEN_WIDTH/2 - 75, SCREEN_HEIGHT/2 + 52, 150, 70))
-
+    #pygame.draw.rect(screen, "red", (SCREEN_WIDTH/2 - 75, SCREEN_HEIGHT/2 + 52, 150, 70))
+    screen.blit(MAIN_MENU_IMAGE, (SCREEN_WIDTH/2 - 75, SCREEN_HEIGHT/2 + 52))
+    if (
+        mouse_clicked and
+        mouse_x > SCREEN_WIDTH/2 - 75 and
+        mouse_x < SCREEN_WIDTH/2 - 75 + 150 and
+        mouse_y > SCREEN_HEIGHT/2 + 52 and
+        mouse_y < SCREEN_HEIGHT/2 + 52 + 70
+    ):
+        game_still_going = False
+        BG_COLOR = "#fdf1e7"
+    # KITCAT!!!!!!!!!!!! =)
+    screen.blit(KITCAT_IMAGE, (145, 50))
 setup_game_stuff()
 while running:
     # poll for events
@@ -235,89 +260,93 @@ while running:
             bin_shooting = 25
             bullets.append(Bullet(bin_x, bin_y + BIN_HEIGHT + 5))
 
-    # score
-    score = camera_y/3
+    if game_still_going:
+        # score
+        score = camera_y/3
 
-    # move down and jumping
-    bin_y = bin_y + bin_y_speed
-    if bin_y > highest_bin_y:
-        highest_bin_y = bin_y
-    camera_y = highest_bin_y - starting_bin_y
-    bin_y_speed = bin_y_speed - .09
+        # move down and jumping
+        bin_y = bin_y + bin_y_speed
+        if bin_y > highest_bin_y:
+            highest_bin_y = bin_y
+        camera_y = highest_bin_y - starting_bin_y
+        bin_y_speed = bin_y_speed - .09
 
-    # timers
-    bin_shooting -= 1
+        # timers
+        bin_shooting -= 1
 
-    for platform in platforms:
-        platform.bounce_player()
-        platform.make_platform_move()
+        for platform in platforms:
+            platform.bounce_player()
+            platform.make_platform_move()
 
-    for i in range(len(bullets)):
-        bullet = bullets[-i + len(bullets) - 1]
-        bullet.move_up()
-        bullet.kill_touching_monsters(monsters)
-        if bullet.y > bin_y + SCREEN_HEIGHT * 2:
-            bullets.pop(-i + len(bullets) - 1)
+        for i in range(len(bullets)):
+            bullet = bullets[-i + len(bullets) - 1]
+            bullet.move_up()
+            bullet.kill_touching_monsters(monsters)
+            if bullet.y > bin_y + SCREEN_HEIGHT * 2:
+                bullets.pop(-i + len(bullets) - 1)
 
-    for monster in monsters:
-        monster.kill_touching_player()
+        for monster in monsters:
+            monster.kill_touching_player()
 
-    # getting back on the screen when going off screen
-    if bin_x > SCREEN_WIDTH + BIN_WIDTH/2:
-        bin_x = -BIN_WIDTH/2
-    if bin_x < -BIN_WIDTH/2:
-        bin_x = SCREEN_WIDTH + BIN_WIDTH/2
+        # getting back on the screen when going off screen
+        if bin_x > SCREEN_WIDTH + BIN_WIDTH/2:
+            bin_x = -BIN_WIDTH/2
+        if bin_x < -BIN_WIDTH/2:
+            bin_x = SCREEN_WIDTH + BIN_WIDTH/2
 
-    # moving
-    pressed_keys = pygame.key.get_pressed()
-    if pressed_keys[pygame.K_LEFT]:
-        bin_x = bin_x - 3
-        bin_moving_right = False
-    if pressed_keys[pygame.K_RIGHT]:
-        bin_x = bin_x + 3
-        bin_moving_right = True
+        # moving
+        pressed_keys = pygame.key.get_pressed()
+        if pressed_keys[pygame.K_LEFT]:
+            bin_x = bin_x - 3
+            bin_moving_right = False
+        if pressed_keys[pygame.K_RIGHT]:
+            bin_x = bin_x + 3
+            bin_moving_right = True
 
-    if bin_shooting > 0:
-        CURRENT_BIN_IMAGE = SHOOTING_BIN_IMAGE
-    elif score < 6500:
-        if bin_moving_right:
-            CURRENT_BIN_IMAGE = RIGHT_BIN_IMAGE
+        if bin_shooting > 0:
+            CURRENT_BIN_IMAGE = SHOOTING_BIN_IMAGE
+        elif score < 6500:
+            if bin_moving_right:
+                CURRENT_BIN_IMAGE = RIGHT_BIN_IMAGE
+            else:
+                CURRENT_BIN_IMAGE = LEFT_BIN_IMAGE
         else:
-            CURRENT_BIN_IMAGE = LEFT_BIN_IMAGE
+            if bin_moving_right == False:
+                CURRENT_BIN_IMAGE = LEFT_BIN_BALLIN_IMAGE
+            else:
+                CURRENT_BIN_IMAGE = RIGHT_BIN_BALLIN_IMAGE
+
+        # losing
+        if game_y_to_screen(bin_y) >= SCREEN_HEIGHT + BIN_HEIGHT:
+            alive = False
+
+        if alive == False:
+            BG_COLOR = ("#FFDCDC")
+
+        # fill the screen with a color to wipe away anything from last frame
+        screen.fill(BG_COLOR)
+
+        screen.blit(CURRENT_BIN_IMAGE, (game_x_to_screen(bin_x -(BIN_WIDTH/2)), game_y_to_screen(bin_y+BIN_HEIGHT)))
+        for platform in platforms:
+            platform.draw()
+
+        for bullet in bullets:
+            bullet.draw()
+
+        for monster in monsters:
+            monster.draw()
+
+        # score
+        SCORE_IMAGE = SCORE_FONT.render(str(int(score)), True, "black")
+        screen.blit(SCORE_IMAGE, (10, 10))
+
+    
+        # ui
+        if not alive:
+            dead_ui()
     else:
-        if bin_moving_right == False:
-            CURRENT_BIN_IMAGE = LEFT_BIN_BALLIN_IMAGE
-        else:
-            CURRENT_BIN_IMAGE = RIGHT_BIN_BALLIN_IMAGE
-
-    # losing
-    if game_y_to_screen(bin_y) >= SCREEN_HEIGHT + BIN_HEIGHT:
-        alive = False
-
-    if alive == False:
-        BG_COLOR = ("#FFDCDC")
-
-    # fill the screen with a color to wipe away anything from last frame
-    screen.fill(BG_COLOR)
-
-    screen.blit(CURRENT_BIN_IMAGE, (game_x_to_screen(bin_x -(BIN_WIDTH/2)), game_y_to_screen(bin_y+BIN_HEIGHT)))
-    for platform in platforms:
-        platform.draw()
-
-    for bullet in bullets:
-        bullet.draw()
-
-    for monster in monsters:
-        monster.draw()
-
-    # score
-    SCORE_IMAGE = SCORE_FONT.render(str(int(score)), True, "black")
-    screen.blit(SCORE_IMAGE, (10, 10))
-
-   
-    # ui
-    if not alive:
-        dead_ui()
+        screen.fill(BG_COLOR)
+        main_menu_ui()
 
     # changing overtime
     if score >= 1000:
