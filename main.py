@@ -213,10 +213,16 @@ def setup_game_stuff():
 
 # ui
 def main_menu_ui():
-    pass
+    # Title Card
+    pygame.draw.rect(screen, "black", (40, 30, SCREEN_WIDTH - 80, 130))
+
+    # Play
+    pygame.draw.rect(screen, "black", (235, game_y_to_screen(170), 175, 75))
+
+    # Settings, to be added later
 
 def dead_ui():
-    global game_still_going, BG_COLOR
+    global game_still_going, BG_COLOR, platforms, bin_x
 
     # mouse detection
     mouse_clicked = pygame.mouse.get_pressed()[0]
@@ -244,11 +250,26 @@ def dead_ui():
         mouse_y > SCREEN_HEIGHT/2 + 52 and
         mouse_y < SCREEN_HEIGHT/2 + 52 + 70
     ):
-        game_still_going = False
+        setup_game_stuff()
+
+        # Main menu "game" setup
+        bin_x = BIN_WIDTH * 2
+        platforms = [
+            Platform(120)
+        ]
+        platforms[0].x = bin_x - PLATFORM_WIDTH/2
+        platforms[0].bouncy = False
+        platforms[0].breaks = False
+        platforms[0].x_speed = 0
+
+        game_still_going = False # now on the main menu
         BG_COLOR = "#fdf1e7"
+
     # KITCAT!!!!!!!!!!!! =)
     screen.blit(KITCAT_IMAGE, (145, 50))
+
 setup_game_stuff()
+
 while running:
     # poll for events
     # pygame.QUIT event means the user clicked X to close your window
@@ -256,27 +277,29 @@ while running:
         if event.type == pygame.QUIT:
             running = False
         # shooting
-        if event.type == pygame.KEYDOWN and event.key == pygame.K_UP:
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_UP and game_still_going:
             bin_shooting = 25
             bullets.append(Bullet(bin_x, bin_y + BIN_HEIGHT + 5))
 
-    if game_still_going:
-        # score
-        score = camera_y/3
+    # score
+    score = camera_y/3
 
-        # move down and jumping
-        bin_y = bin_y + bin_y_speed
+    # move down and jumping
+    bin_y = bin_y + bin_y_speed
+    bin_y_speed = bin_y_speed - .09
+
+    for platform in platforms:
+        platform.bounce_player()
+        platform.make_platform_move()
+
+    if game_still_going:
+        # moving the camera
         if bin_y > highest_bin_y:
             highest_bin_y = bin_y
         camera_y = highest_bin_y - starting_bin_y
-        bin_y_speed = bin_y_speed - .09
 
         # timers
         bin_shooting -= 1
-
-        for platform in platforms:
-            platform.bounce_player()
-            platform.make_platform_move()
 
         for i in range(len(bullets)):
             bullet = bullets[-i + len(bullets) - 1]
@@ -323,29 +346,29 @@ while running:
         if alive == False:
             BG_COLOR = ("#FFDCDC")
 
-        # fill the screen with a color to wipe away anything from last frame
-        screen.fill(BG_COLOR)
+    # fill the screen with a color to wipe away anything from last frame
+    screen.fill(BG_COLOR)
 
-        screen.blit(CURRENT_BIN_IMAGE, (game_x_to_screen(bin_x -(BIN_WIDTH/2)), game_y_to_screen(bin_y+BIN_HEIGHT)))
-        for platform in platforms:
-            platform.draw()
+    screen.blit(CURRENT_BIN_IMAGE, (game_x_to_screen(bin_x -(BIN_WIDTH/2)), game_y_to_screen(bin_y+BIN_HEIGHT)))
+    for platform in platforms:
+        platform.draw()
 
-        for bullet in bullets:
-            bullet.draw()
+    for bullet in bullets:
+        bullet.draw()
 
-        for monster in monsters:
-            monster.draw()
+    for monster in monsters:
+        monster.draw()
 
-        # score
+    # score
+    if game_still_going:
         SCORE_IMAGE = SCORE_FONT.render(str(int(score)), True, "black")
         screen.blit(SCORE_IMAGE, (10, 10))
-
     
-        # ui
-        if not alive:
-            dead_ui()
-    else:
-        screen.fill(BG_COLOR)
+    # ui
+    if not alive:
+        dead_ui()
+
+    if not game_still_going:
         main_menu_ui()
 
     # changing overtime
