@@ -152,17 +152,17 @@ class Bullet:
     def kill_touching_monsters(self, monsters):
         for monster in monsters:
             if math.sqrt((self.x - monster.x) ** 2 + (self.y - monster.y) ** 2) <= 35:
-                monster.alive = False
+                monster.y = monster.y + 1500
 
 class Monster:
     def __init__(self, starting_x, starting_y):
         self.x = starting_x
         self.y = starting_y
-        self.alive = True
 
     def draw(self):
-        if self.alive == True:
-            pygame.draw.circle(screen, "black", game_coordinate_to_screen(self.x, self.y), 30)
+        if game_y_to_screen(self.y) > SCREEN_HEIGHT + 30:
+            self.y = self.y + 1500
+        pygame.draw.circle(screen, "black", game_coordinate_to_screen(self.x, self.y), 30)
 
     def kill_touching_player(self):
         global alive, bin_y_speed
@@ -170,11 +170,10 @@ class Monster:
             bin_x + BIN_WIDTH > self.x - 30 and
             bin_x < self.x - 30 + 60 and
             bin_y + BIN_HEIGHT > self.y - 30 and
-            bin_y < self.y - 30 + 60 and
-            self.alive
+            bin_y < self.y - 30 + 60
         ):
-            alive = False
             bin_y_speed = -2
+            alive = False
 
 platforms = []
 bullets = []
@@ -215,6 +214,7 @@ def setup_game_stuff():
 # ui
 def main_menu_ui():
     pass
+
 def dead_ui():
     global game_still_going, BG_COLOR
 
