@@ -23,6 +23,7 @@ BREAKABLE_PLATFORM_IMAGE = pygame.image.load("images/breakable_platform.png")
 KITCAT_IMAGE = pygame.image.load("images/kitcat.png")
 MAIN_MENU_IMAGE = pygame.image.load("images/main_menu.png")
 TRY_AGAIN_IMAGE = pygame.image.load("images/try_again.png")
+SUPER_BIN_IMAGE = pygame.image.load("images/super_bin!!!!!.png")
 
 CURRENT_BIN_IMAGE = LEFT_BIN_IMAGE
 
@@ -43,11 +44,12 @@ bin_moving_right = False
 starting_bin_y = bin_y
 highest_bin_y = bin_y
 camera_y = 0
+flying_by_rocket = False
 
 platforms_to_hide = 0
 hidden_platforms = 0
 
-game_still_going = True
+game_still_going = False
 
 alive = True
 
@@ -69,6 +71,25 @@ def game_coordinate_to_screen(game_x, game_y):
     return (game_x_to_screen(game_x), game_y_to_screen(game_y))
 
 # classes
+class Rocket:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    def draw(self):
+        pygame.draw.rect(screen, "brown", (game_x_to_screen(self.x), game_y_to_screen(self.y), 15, 23))
+
+    def detect_player(self):
+        global bin_y_speed, flying_by_rocket
+        if (
+            bin_x >= self.x - BIN_WIDTH / 2 and
+            bin_x <= self.x + 15 + BIN_WIDTH / 2 and
+            bin_y >= self.y - 23 and
+            bin_y <= self.y
+        ):
+            bin_y_speed = 20
+            flying_by_rocket = True
+
 class Platform:
     # types of platforms:
     # 0: normal
@@ -86,10 +107,17 @@ class Platform:
             self.x_speed = 3
         else:
             self.x_speed = 0
+        rocket_chance = random.randint(1,12)
+        if rocket_chance == 1:
+            self.rocket = Rocket(self.x, self.y + 20)
+        else:
+            self.rocket = None
 
     def make_platform_move(self):
         if self.active:
             self.x += self.x_speed
+            if self.rocket is not None:
+                self.rocket.x += self.x_speed
             if self.x >= SCREEN_WIDTH - 10 - PLATFORM_WIDTH:
                 self.x_speed *= -1
             if self.x <= 10:
@@ -118,6 +146,8 @@ class Platform:
                 # pygame.draw.rect(screen, "#a3ce49", (game_x_to_screen(self.x), game_y_to_screen(self.y), PLATFORM_WIDTH, PLATFORM_THICKNESS))
             else:
                 pygame.draw.rect(screen, "#393939", (game_x_to_screen(self.x), game_y_to_screen(self.y), PLATFORM_WIDTH, PLATFORM_THICKNESS))
+        if self.rocket is not None:
+            self.rocket.draw()
 
     def bounce_player(self):
         global bin_y_speed
@@ -137,6 +167,8 @@ class Platform:
                     bin_y_speed = 7.5
                 else:
                     bin_y_speed = 5.6
+            if self.rocket is not None:
+                self.rocket.detect_player()
 
 class Bullet:
     def __init__(self, starting_x, starting_y):
@@ -153,15 +185,17 @@ class Bullet:
         for monster in monsters:
             if math.sqrt((self.x - monster.x) ** 2 + (self.y - monster.y) ** 2) <= 35:
                 monster.y = monster.y + 1500
+                monster.x = random.randint(30, SCREEN_WIDTH - 30)
 
 class Monster:
-    def __init__(self, starting_x, starting_y):
-        self.x = starting_x
+    def __init__(self, starting_y):
+        self.x = random.randint(30, SCREEN_WIDTH - 30)
         self.y = starting_y
 
     def draw(self):
         if game_y_to_screen(self.y) > SCREEN_HEIGHT + 30:
             self.y = self.y + 1500
+            monster.x = random.randint(30, SCREEN_WIDTH - 30)
         pygame.draw.circle(screen, "black", game_coordinate_to_screen(self.x, self.y), 30)
 
     def kill_touching_player(self):
@@ -170,7 +204,8 @@ class Monster:
             bin_x + BIN_WIDTH > self.x - 30 and
             bin_x < self.x - 30 + 60 and
             bin_y + BIN_HEIGHT > self.y - 30 and
-            bin_y < self.y - 30 + 60
+            bin_y < self.y - 30 + 60 and
+            flying_by_rocket == False
         ):
             bin_y_speed = -2
             alive = False
@@ -178,6 +213,23 @@ class Monster:
 platforms = []
 bullets = []
 monsters = []
+
+def main_menu_game_stuff():
+    global bin_x, platforms, game_still_going, BG_COLOR
+
+    setup_game_stuff()
+    # Main menu "game" setup
+    bin_x = BIN_WIDTH * 2
+    platforms = [
+        Platform(120)
+    ]
+    platforms[0].x = bin_x - PLATFORM_WIDTH/2
+    platforms[0].bouncy = False
+    platforms[0].breaks = False
+    platforms[0].x_speed = 0
+
+    game_still_going = False # now on the main menu
+    BG_COLOR = "#fdf1e7"
 
 def setup_game_stuff():
     global platforms, bullets, monsters, bin_y_speed, bin_y, bin_x, alive, camera_y, highest_bin_y, starting_bin_y, BG_COLOR
@@ -209,15 +261,30 @@ def setup_game_stuff():
     platforms[0].x = SCREEN_WIDTH / 2 - PLATFORM_WIDTH
 
     bullets = []
-    monsters = [Monster(SCREEN_WIDTH / 2, 1000)]
+    monsters = [Monster(1000)]
 
 # ui
 def main_menu_ui():
+    global game_still_going
+
+    # mouse detection
+    mouse_clicked = pygame.mouse.get_pressed()[0]
+    mouse_x, mouse_y = pygame.mouse.get_pos()
+
     # Title Card
     pygame.draw.rect(screen, "black", (40, 30, SCREEN_WIDTH - 80, 130))
 
     # Play
     pygame.draw.rect(screen, "black", (235, game_y_to_screen(170), 175, 75))
+    if (
+        mouse_clicked and
+        mouse_x > 235 and
+        mouse_x < 235 + 175 and
+        mouse_y > game_y_to_screen(170) and
+        mouse_y < game_y_to_screen(170) + 75
+    ):
+        game_still_going = True
+        setup_game_stuff()
 
     # Settings, to be added later
 
@@ -250,25 +317,12 @@ def dead_ui():
         mouse_y > SCREEN_HEIGHT/2 + 52 and
         mouse_y < SCREEN_HEIGHT/2 + 52 + 70
     ):
-        setup_game_stuff()
-
-        # Main menu "game" setup
-        bin_x = BIN_WIDTH * 2
-        platforms = [
-            Platform(120)
-        ]
-        platforms[0].x = bin_x - PLATFORM_WIDTH/2
-        platforms[0].bouncy = False
-        platforms[0].breaks = False
-        platforms[0].x_speed = 0
-
-        game_still_going = False # now on the main menu
-        BG_COLOR = "#fdf1e7"
+        main_menu_game_stuff()
 
     # KITCAT!!!!!!!!!!!! =)
     screen.blit(KITCAT_IMAGE, (145, 50))
 
-setup_game_stuff()
+main_menu_game_stuff()
 
 while running:
     # poll for events
@@ -287,6 +341,8 @@ while running:
     # move down and jumping
     bin_y = bin_y + bin_y_speed
     bin_y_speed = bin_y_speed - .09
+    if flying_by_rocket == True and bin_y_speed <= 0:
+        flying_by_rocket = False
 
     for platform in platforms:
         platform.bounce_player()
@@ -326,9 +382,11 @@ while running:
             bin_x = bin_x + 3
             bin_moving_right = True
 
-        if bin_shooting > 0:
+        if flying_by_rocket:
+            CURRENT_BIN_IMAGE = SUPER_BIN_IMAGE
+        elif bin_shooting > 0:
             CURRENT_BIN_IMAGE = SHOOTING_BIN_IMAGE
-        elif score < 6500:
+        elif score < 2000:
             if bin_moving_right:
                 CURRENT_BIN_IMAGE = RIGHT_BIN_IMAGE
             else:
