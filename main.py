@@ -9,6 +9,7 @@ SCREEN_WIDTH = 470
 SCREEN_HEIGHT = 720
 BG_COLOR = "#fdf1e7"
 
+RESTART_FONT = pygame.font.SysFont("Lobster", 25)
 SCORE_FONT = pygame.font.SysFont("Arial", 30)
 
 LEFT_BIN_IMAGE = pygame.image.load("images/bin_1.png")
@@ -24,8 +25,18 @@ KITCAT_IMAGE = pygame.image.load("images/kitcat.png")
 MAIN_MENU_IMAGE = pygame.image.load("images/main_menu.png")
 TRY_AGAIN_IMAGE = pygame.image.load("images/try_again.png")
 SUPER_BIN_IMAGE = pygame.image.load("images/super_bin!!!!!.png")
+PARROT_IMAGE = pygame.image.load("images/5k parrot.png")
+LOGO_IMAGE = pygame.image.load("images/logo.png")
 
 CURRENT_BIN_IMAGE = LEFT_BIN_IMAGE
+
+DEAD_SOUND = pygame.mixer.Sound("sounds/dead.mp3")
+JUMP_SOUND = pygame.mixer.Sound("sounds/jump.mp3")
+SHOOT_SOUND = pygame.mixer.Sound("sounds/shoot.mp3")
+JET_SOUND = pygame.mixer.Sound("sounds/jet.mp3")
+
+JUMP_SOUND.set_volume(0.25)
+SHOOT_SOUND.set_volume(0.5)
 
 BIN_WIDTH = 50
 BIN_HEIGHT = 64
@@ -78,7 +89,7 @@ class Rocket:
 
     def draw(self):
         pygame.draw.rect(screen, "brown", (game_x_to_screen(self.x), game_y_to_screen(self.y), 15, 23))
-
+    
     def detect_player(self):
         global bin_y_speed, flying_by_rocket
         if (
@@ -89,7 +100,8 @@ class Rocket:
         ):
             bin_y_speed = 20
             flying_by_rocket = True
-
+            JET_SOUND.play()
+            
 class Platform:
     # types of platforms:
     # 0: normal
@@ -162,11 +174,13 @@ class Platform:
             ):
                 if self.breaks:
                     self.reset_platform()
-                    bin_y_speed = 5.6
+                    bin_y_speed = 10
                 elif self.bouncy:
-                    bin_y_speed = 7.5
+                    bin_y_speed = 17
                 else:
-                    bin_y_speed = 5.6
+                    bin_y_speed = 10
+
+                JUMP_SOUND.play()
             if self.rocket is not None:
                 self.rocket.detect_player()
 
@@ -174,6 +188,7 @@ class Bullet:
     def __init__(self, starting_x, starting_y):
         self.x = starting_x
         self.y = starting_y
+        SHOOT_SOUND.play()
 
     def draw(self):
         pygame.draw.circle(screen, "#93c47d", game_coordinate_to_screen(self.x, self.y), 5)
@@ -263,6 +278,24 @@ def setup_game_stuff():
     bullets = []
     monsters = [Monster(1000)]
 
+    
+def restart_ui():
+    pygame.draw.rect(screen, "red", (SCREEN_WIDTH - 100, 5, 80, 25))
+    restart_text = RESTART_FONT.render("Restart", True, "black")
+    screen.blit(restart_text, (SCREEN_WIDTH - 60 - restart_text.get_width()/2, 18 - restart_text.get_height()/2))
+
+    mouse_pos = pygame.mouse.get_pos() # [x, y]
+    mouse_pressed = pygame.mouse.get_pressed()[0]
+
+    if (
+        mouse_pos[0] > SCREEN_WIDTH - 100 and
+        mouse_pos[0] < SCREEN_WIDTH - 100 + 80 and
+        mouse_pos[1] > 5 and
+        mouse_pos[1] < 5 + 25 and
+        mouse_pressed
+    ):
+        setup_game_stuff()
+
 # ui
 def main_menu_ui():
     global game_still_going
@@ -272,7 +305,8 @@ def main_menu_ui():
     mouse_x, mouse_y = pygame.mouse.get_pos()
 
     # Title Card
-    pygame.draw.rect(screen, "black", (40, 30, SCREEN_WIDTH - 80, 130))
+    # pygame.draw.rect(screen, "black", (40, 30, SCREEN_WIDTH - 80, 130))
+    screen.blit(LOGO_IMAGE, (40,30))
 
     # Play
     pygame.draw.rect(screen, "black", (235, game_y_to_screen(170), 175, 75))
@@ -340,7 +374,7 @@ while running:
 
     # move down and jumping
     bin_y = bin_y + bin_y_speed
-    bin_y_speed = bin_y_speed - .09
+    bin_y_speed = bin_y_speed - .20
     if flying_by_rocket == True and bin_y_speed <= 0:
         flying_by_rocket = False
 
@@ -376,10 +410,10 @@ while running:
         # moving
         pressed_keys = pygame.key.get_pressed()
         if pressed_keys[pygame.K_LEFT]:
-            bin_x = bin_x - 3
+            bin_x = bin_x - 5.67
             bin_moving_right = False
         if pressed_keys[pygame.K_RIGHT]:
-            bin_x = bin_x + 3
+            bin_x = bin_x + 5.67
             bin_moving_right = True
 
         if flying_by_rocket:
@@ -391,11 +425,13 @@ while running:
                 CURRENT_BIN_IMAGE = RIGHT_BIN_IMAGE
             else:
                 CURRENT_BIN_IMAGE = LEFT_BIN_IMAGE
-        else:
+        elif score < 5000:
             if bin_moving_right == False:
                 CURRENT_BIN_IMAGE = LEFT_BIN_BALLIN_IMAGE
             else:
                 CURRENT_BIN_IMAGE = RIGHT_BIN_BALLIN_IMAGE
+        else:
+            CURRENT_BIN_IMAGE = PARROT_IMAGE
 
         # losing
         if game_y_to_screen(bin_y) >= SCREEN_HEIGHT + BIN_HEIGHT:
@@ -421,9 +457,11 @@ while running:
     if game_still_going:
         SCORE_IMAGE = SCORE_FONT.render(str(int(score)), True, "black")
         screen.blit(SCORE_IMAGE, (10, 10))
-    
+        restart_ui()
+
     # ui
     if not alive:
+        DEAD_SOUND.play()
         dead_ui()
 
     if not game_still_going:
